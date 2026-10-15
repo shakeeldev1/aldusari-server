@@ -7,6 +7,7 @@ import cloudinary from '../config/cloudinary.js';
 import { uploadImage } from '../utils/cloudinaryUpload.js';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
+import mongoose from 'mongoose';
 
 const router = Router();
 const asPublic = article => ({ _id: article._id, title: article.title, slug: article.slug, excerpt: article.excerpt, content: article.content, category: article.category, author: article.author, status: article.status, imageUrl: article.imageUrl, publishedAt: article.publishedAt, createdAt: article.createdAt, updatedAt: article.updatedAt });
@@ -46,7 +47,7 @@ router.get('/', async (req, res, next) => {
   } catch(error){ next(error); }
 });
 
-router.get('/:id', async (req,res,next)=>{ try { const article=await Article.findOne({ _id:req.params.id, status:'published' }); if(!article)return res.status(404).json({message:'Article not found.'}); res.json({article:asPublic(article)}); } catch(error){next(error);} });
+router.get('/:identifier', async (req,res,next)=>{ try { const { identifier }=req.params; const lookup=mongoose.isValidObjectId(identifier)?{ $or:[{_id:identifier},{slug:identifier}] }:{slug:identifier}; const article=await Article.findOne({ ...lookup, status:'published' }); if(!article)return res.status(404).json({message:'Article not found.'}); res.json({article:asPublic(article)}); } catch(error){next(error);} });
 router.post('/', requireAdmin, upload.single('image'), parseInput, async (req,res,next)=>{
   try {
     const fields=req.articleFields; const slug=await uniqueSlug(fields.title);
